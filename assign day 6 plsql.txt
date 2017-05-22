@@ -1,0 +1,277 @@
+1)
+create or replace type MARKS_TYPE as object
+(Subject VARCHAR2(25),midTermMarks NUMBER(3),annualMarks NUMBER(3));
+/
+create table mymarks( data MARKS_TYPE);
+insert into mymarks values(marks_type('maths',70,150));
+insert into mymarks values(marks_type('physics',90,170));
+insert into mymarks values(marks_type('biology',95,180));
+
+declare
+c_marks marks_type;
+begin
+select data into c_marks from mymarks;
+for x in 1..c_marks.count
+loop
+select p.data.midtermmarks from mymarks p;
+end loop;
+end;
+/
+
+select p.data.annualmarks from mymarks p where p.data.subject='maths';
+
+2)
+Create table students(rollNo NUMBER(3) Primary Key,studentName VARCHAR2(25),Score MARKS_TYPE);	
+insert into students values(101,'shashank',marks_type('biology',95,180));
+insert into students values(102,'shruti',marks_type('physics',90,170));
+insert into students values(103,'aditya',marks_type('maths',70,150));
+
+select p.score.midtermmarks,p.score.annualmarks from students p where p.rollno=101;
+update students p set p.score.annualmarks=p.score.annualmarks+5 where rollno=101;
+
+
+3)
+create or replace type ICECREAM_TYPE as object
+(flovorNo	NUMBER(2),
+Fname  VARCHAR(10),
+Cost NUMBER(3),
+Hastopping CHAR(1));
+/   
+
+Create table menu(MenuNo NUMBER(2)	Primary key,mainCourse VARCHAR2(15) Not Null,Desert ICECREAM_TYPE,Colddrink CHAR(6));	
+
+insert into menu values(1,'dalkhichdi', ICECREAM_TYPE(01,'Dinshaws',150,'y'),'coke');
+insert into menu values(2,'baiganbharta', ICECREAM_TYPE(02,'urja',50,'n'),'spirit');
+insert into menu values(3,'vegmaratha', ICECREAM_TYPE(03,'mahol',118,'y'),'maaza');
+insert into menu values(4,'paneer masala', ICECREAM_TYPE(04,'khatri',119,'n'),'slice');
+
+
+select m.desert.cost,m.desert.fname from menu m where m.desert.flovorno=01;
+
+begin
+update menu set maincourse='salad' where menuno=1;
+update menu m set m.desert.cost=600 where m.menuno=1;
+end;
+/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+***********************************************************************************************
+---------------------------------------------------------------COLLECTIONS-------------------------------------------------------------------
+
+2)
+
+A.	Create an object type CUST_TAB with below attributes
+-	Cust_id
+-	Cust_Name
+-	Plan_Name
+B.	Create suitable collection type CUST_DETAILS of CUST_TAB type.
+One customer may have many plans .
+
+C.	Create a table Cust_Tab_details as follows :
+
+Column name                            	Constraint  	Datatype
+Srno                          	 	Primary Key            	  Number(10)
+Cust_Info                      	 			CUST_DETAILS
+Cust_number	 	                                	Number(10)
+		                             
+D.	 Insert 2 rows in the above table 
+Atleast 2 CUST_TAB entries per srno.
+E.	Write the select query to display Sr.no and Cust_info from cust_tab_detail table
+Note : Write SQL select command not the procedure.
+
+
+create or replace type CUST_TAB as object
+(Cust_id  number,
+Cust_Name varchar2(20),
+Plan_Name  varchar2(20));
+/
+
+create type CUST_DETAILS as varray(5) of CUST_TAB;
+
+create table Cust_Tab_details(Srno Number(10) Primary Key, Cust_Info CUST_DETAILS,Cust_number Number(10));
+insert into   Cust_Tab_details values(1,CUST_DETAILS(CUST_TAB(101 ,'shashank','BB CONNECTIONS'),CUST_TAB(201,'aditya','UNLIMITED PLAN')),201);    	 insert into   Cust_Tab_details values(2,CUST_DETAILS(CUST_TAB(301 ,'pranali','BMW CONNECTIONS'),CUST_TAB(401,'puja','JIO PLAN')),501);  
+
+
+declare
+cus_info CUST_DETAILS;
+s_no Number;
+cursor c1 is select * from Cust_Tab_details;
+begin
+for y in c1
+loop
+select srno,cust_info into s_no,cus_info from Cust_Tab_details where srno=y.srno;
+for x in 1..cus_info.count
+loop
+dbms_output.put_line('srno is    '||s_no||'   custid is  '||cus_info(x).Cust_id||'  cust name is  '||cus_info(x).Cust_Name||'   plan name is  '||cus_info(x).Plan_Name);
+end loop;
+end loop;
+end;
+/
+
+
+4)
+
+create or replace type VEHICLE_TYPE as object
+(Vehicle_No VARCHAR2(12),
+Vehicle_Type CHAR(1),
+Monthly_Expense NUMBER(7));
+/
+
+create or replace type VEHICLE_ARR as varray(3) of  VEHICLE_TYPE ;
+/
+
+Create  table EMP_VARRAY(Emp_No NUMBER(4) PRIMARY KEY,Emp_Name VARCHAR2(30),vehicleList VEHICLE_ARR);
+
+insert into  EMP_VARRAY values(1001,'shashank',VEHICLE_ARR(VEHICLE_TYPE(5819,'T',1000),VEHICLE_TYPE(5665,'f',10000),VEHICLE_TYPE(5656,'f',20000)));
+insert into  EMP_VARRAY values(1002,'pranali',VEHICLE_ARR(VEHICLE_TYPE(5800,'T',1000),VEHICLE_TYPE(8100,'f',50000),VEHICLE_TYPE(5789,'f',21000)));
+
+create or replace procedure forinsert(empno number,v_arr  VEHICLE_ARR) as
+begin
+insert into EMP_VARRAY values(1002,'puja',v_arr);
+exception
+when DUP_VAL_ON_INDEX then
+dbms_output.put_line('enter valid emp id');
+end;
+/
+
+declare
+t_var VEHICLE_ARR;
+begin
+t_var:=VEHICLE_ARR(VEHICLE_TYPE(5800,'T',1000),VEHICLE_TYPE(8100,'f',50000),VEHICLE_TYPE(5789,'f',21000));
+forinsert(1002,t_var);
+end;
+/
+
+
+create or replace procedure forModify(p_empid number,p_var in out vehicle_arr) as
+car number;
+begin
+car:=p_var.count;
+p_var.extend(1);
+p_var(car+1):=VEHICLE_TYPE(8888,'F',6000);
+update EMP_VARRAY set vehicleList=p_var where Emp_No=p_empid;
+end;
+
+3)
+create type SKILL_TYPE as object
+(skill_id number(3),
+skill_name varchar2(20),
+rating number(2));
+/
+ 
+create type skill_details as table of skill_type;
+
+create table EMPMAIN(Emp_No NUMBER(4) PRIMARY KEY,Emp_Name CHAR(30),all_skills skill_details)
+nested table all_skills store as skill_details_tab;
+/
+
+insert into EMPMAIN values(1001,'Aman Dev',skill_details(skill_type(101,'Design',9),skill_type(201,'Code',10),skill_type(301,'Test',8)));
+
+insert into EMPMAIN values(3001,'Aditya',skill_details(skill_type(101,'Design',8),skill_type(201,'Code',7),skill_type(301,'Test',10)));
+insert into EMPMAIN values(4001,'shashank',skill_details(skill_type(101,null,8),skill_type(201,'Code',7),skill_type(301,'Test',10)));
+update the(select all_skills from empmain where emp_no=1001) set rating=9 where skill_id=301;
+
+delete from the(select all_skills from empmain where emp_no=4001) where skill_name is null and skill_id=101;
+
+create or replace procedure ADD_SKILL(Emp_No NUMBER,skill_id number,skill_name varchar2,rating number) as
+begin
+insert into EMPMAIN values(emp_no,'Aditya',skill_details(skill_type(skill_id,'skill_name',rating)));
+end;
+/
+create or replace procedure ADD_SKILL(p_empid number,p_var in out skill_details,skill_id number,skill_name varchar2,rating number) as
+car number;
+begin
+car:=p_var.count;
+p_var.extend(1);
+p_var(car+1):=skill_type(skill_id,skill_name,rating);
+update EMPMAIN set all_skills=p_var where Emp_No=p_empid;
+end;
+/
+create or replace procedure ADD_SKILL(p_eno number, skill_detail2 varchar2, skill_detail3 number) as
+skill_detail1 number;
+begin
+select max(skill_id) into skill_detail1 from the (select all_skills from empmain where emp_no=p_eno);
+skill_detail1:=skill_detail1+100;
+insert into the (select all_skills from empmain where emp_no=p_eno) values (SKILL_TYPE(skill_detail1,skill_detail2,skill_detail3));
+dbms_output.put_line('Added');
+end;
+/
+begin
+add_skill(3001,'Test',9);
+end;
+/
+
+6)
+create or replace type INCREMENT_TYPE as object 
+(Incr_ID NUMBER(3),
+Incr_Date	DATE,
+Incr_Amt	NUMBER(7)
+);
+/
+create table  EMP_DETAIL(Emp_No NUMBER(4),Emp_Name CHAR (30),Emp_Skills skill_details,Emp_Incr increment_type)
+nested table emp_skills store as emp1_skills;
+/
+
+insert into emp_detail values(1001,'shashank',skill_details(skill_type(101,'TEST',9),skill_type(201,'DESIGN',8),skill_type(301,'CODE',10)),INCREMENT_TYPE(701,'17-Jan-98',3000));
+
+insert into emp_detail values(1002,'aditya',skill_details(skill_type(101,'TEST',7),skill_type(201,'DESIGN',9),skill_type(301,'CODE',9)),INCREMENT_TYPE(702,'18-Jan-97',8000));
+
+
+create or replace procedure get_data(p_empno EMP_DETAIL.Emp_No%type) as
+p_ename EMP_DETAIL.Emp_Name%type;
+cursor c1 is select Emp_Skills,Emp_Incr from emp_detail where emp_no=p_empno;
+v_skill skill_details;
+v_incre increment_type;
+begin
+select emp_name into p_ename from emp_detail where emp_no=p_empno;
+open c1;
+loop
+fetch c1 into v_skill,v_incre;
+exit when c1%notfound;
+dbms_output.put_line('Employee ID is   '||p_empno||'Employee name is   '||p_ename);
+
+dbms_output.put_line('Skill set');
+for x in 1..v_skill.count
+loop
+dbms_output.put_line('skill_id:- '||v_skill(x).skill_id||'  skill name is  '||v_skill(x).skill_name||'  rating'||v_skill(x).rating);
+end loop;
+dbms_output.put_line('Increment');
+dbms_output.put_line('Increment ID:- '||v_incre.Incr_ID||' Incr_Date is  '||v_incre.Incr_Date||' Incr_Amt  '||v_incre.Incr_Amt);
+end loop;
+end;
+/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
